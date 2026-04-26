@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -39,7 +38,7 @@ function resize() {
 resize();
 window.addEventListener('resize', resize);
 
-var ctx = canvas.getContext(‘2d’);
+var ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
@@ -54,34 +53,34 @@ var keys = {};
 var jumpPressed = false;
 var prevJump = false;
 
-document.addEventListener(‘keydown’, function(e) {
-keys[e.code] = true;
-// Arrow keys / WASD / space — prevent scroll
-if ([‘Space’,‘ArrowUp’,‘ArrowDown’,‘ArrowLeft’,‘ArrowRight’].indexOf(e.code) >= 0)
-e.preventDefault();
+document.addEventListener('keydown', function(e) {
+  keys[e.code] = true;
+  // Arrow keys / WASD / space — prevent scroll
+  if (['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(e.code) >= 0)
+    e.preventDefault();
 });
-document.addEventListener(‘keyup’, function(e) { keys[e.code] = false; });
+document.addEventListener('keyup', function(e) { keys[e.code] = false; });
 
 // 3DS D-Pad via gamepad API
 function getGP() {
-var pads = navigator.getGamepads ? navigator.getGamepads() : [];
-for (var i = 0; i < pads.length; i++) if (pads[i]) return pads[i];
-return null;
+  var pads = navigator.getGamepads ? navigator.getGamepads() : [];
+  for (var i = 0; i < pads.length; i++) if (pads[i]) return pads[i];
+  return null;
 }
 function gpBtn(pad, i) { return !!(pad && pad.buttons[i] && (pad.buttons[i].pressed || pad.buttons[i].value > 0.5)); }
 function gpAxis(pad, i) {
-if (!pad || pad.axes[i] === undefined) return 0;
-var v = pad.axes[i];
-return Math.abs(v) > 0.2 ? v : 0;
+  if (!pad || pad.axes[i] === undefined) return 0;
+  var v = pad.axes[i];
+  return Math.abs(v) > 0.2 ? v : 0;
 }
 
 // Touch controls (on-screen d-pad for touchscreen / lower 3DS screen)
 var touch = { left:false, right:false, jump:false, sprint:false };
 function makeTouchBtn(id, prop) {
-var el = document.getElementById(id);
-if (!el) return;
-el.addEventListener(‘touchstart’, function(e){ e.preventDefault(); touch[prop]=true; }, {passive:false});
-el.addEventListener(‘touchend’,   function(e){ e.preventDefault(); touch[prop]=false;}, {passive:false});
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('touchstart', function(e){ e.preventDefault(); touch[prop]=true; }, {passive:false});
+  el.addEventListener('touchend',   function(e){ e.preventDefault(); touch[prop]=false;}, {passive:false});
 }
 
 // ─── LEVEL DATA ───────────────────────────────────────────────────────────────
@@ -91,201 +90,201 @@ el.addEventListener(‘touchend’,   function(e){ e.preventDefault(); touch[pro
 
 var LEVELS = [
 // 1 — Tutorial
-{ bg:’#0a0a1a’, accent:’#4ecdc4’, width:1200,
-start:[30,170], goal:{x:1140,y:140,w:20,h:20},
-platforms:[
-{x:0,   y:190, w:120, h:10, c:’#4ecdc4’},
-{x:160, y:175, w:80,  h:10, c:’#45b7d1’},
-{x:290, y:158, w:80,  h:10, c:’#96ceb4’},
-{x:420, y:140, w:80,  h:10, c:’#ffeaa7’},
-{x:550, y:158, w:80,  h:10, c:’#fd79a8’},
-{x:680, y:140, w:100, h:10, c:’#a29bfe’},
-{x:830, y:120, w:80,  h:10, c:’#74b9ff’},
-{x:980, y:138, w:80,  h:10, c:’#55efc4’},
-{x:1110,y:150, w:80,  h:10, c:’#ffd700’},
-]},
+{ bg:'#0a0a1a', accent:'#4ecdc4', width:1200,
+  start:[30,170], goal:{x:1140,y:140,w:20,h:20},
+  platforms:[
+    {x:0,   y:190, w:120, h:10, c:'#4ecdc4'},
+    {x:160, y:175, w:80,  h:10, c:'#45b7d1'},
+    {x:290, y:158, w:80,  h:10, c:'#96ceb4'},
+    {x:420, y:140, w:80,  h:10, c:'#ffeaa7'},
+    {x:550, y:158, w:80,  h:10, c:'#fd79a8'},
+    {x:680, y:140, w:100, h:10, c:'#a29bfe'},
+    {x:830, y:120, w:80,  h:10, c:'#74b9ff'},
+    {x:980, y:138, w:80,  h:10, c:'#55efc4'},
+    {x:1110,y:150, w:80,  h:10, c:'#ffd700'},
+  ]},
 // 2 — Zigzag climb
-{ bg:’#0d1b2a’, accent:’#e17055’, width:1400,
-start:[30,170], goal:{x:1350,y:60,w:20,h:20},
-platforms:[
-{x:0,   y:190, w:100, h:10, c:’#e17055’},
-{x:140, y:168, w:70,  h:10, c:’#fdcb6e’},
-{x:50,  y:145, w:70,  h:10, c:’#00b894’},
-{x:180, y:122, w:70,  h:10, c:’#0984e3’},
-{x:80,  y:100, w:70,  h:10, c:’#6c5ce7’},
-{x:220, y:80,  w:70,  h:10, c:’#fd79a8’},
-{x:350, y:100, w:80,  h:10, c:’#ffeaa7’},
-{x:480, y:78,  w:70,  h:10, c:’#55efc4’},
-{x:610, y:60,  w:70,  h:10, c:’#e17055’},
-{x:730, y:80,  w:70,  h:10, c:’#fdcb6e’},
-{x:860, y:58,  w:70,  h:10, c:’#00b894’},
-{x:990, y:78,  w:70,  h:10, c:’#74b9ff’},
-{x:1110,y:55,  w:70,  h:10, c:’#a29bfe’},
-{x:1240,y:70,  w:80,  h:10, c:’#ffd700’},
-{x:1330,y:70,  w:60,  h:10, c:’#ffd700’},
-]},
+{ bg:'#0d1b2a', accent:'#e17055', width:1400,
+  start:[30,170], goal:{x:1350,y:60,w:20,h:20},
+  platforms:[
+    {x:0,   y:190, w:100, h:10, c:'#e17055'},
+    {x:140, y:168, w:70,  h:10, c:'#fdcb6e'},
+    {x:50,  y:145, w:70,  h:10, c:'#00b894'},
+    {x:180, y:122, w:70,  h:10, c:'#0984e3'},
+    {x:80,  y:100, w:70,  h:10, c:'#6c5ce7'},
+    {x:220, y:80,  w:70,  h:10, c:'#fd79a8'},
+    {x:350, y:100, w:80,  h:10, c:'#ffeaa7'},
+    {x:480, y:78,  w:70,  h:10, c:'#55efc4'},
+    {x:610, y:60,  w:70,  h:10, c:'#e17055'},
+    {x:730, y:80,  w:70,  h:10, c:'#fdcb6e'},
+    {x:860, y:58,  w:70,  h:10, c:'#00b894'},
+    {x:990, y:78,  w:70,  h:10, c:'#74b9ff'},
+    {x:1110,y:55,  w:70,  h:10, c:'#a29bfe'},
+    {x:1240,y:70,  w:80,  h:10, c:'#ffd700'},
+    {x:1330,y:70,  w:60,  h:10, c:'#ffd700'},
+  ]},
 // 3 — Big gaps
-{ bg:’#060610’, accent:’#74b9ff’, width:1600,
-start:[30,170], goal:{x:1555,y:120,w:20,h:20},
-platforms:[
-{x:0,   y:190, w:100, h:10, c:’#74b9ff’},
-{x:160, y:175, w:50,  h:10, c:’#a29bfe’},
-{x:280, y:158, w:40,  h:10, c:’#fd79a8’},
-{x:400, y:140, w:50,  h:10, c:’#ffeaa7’},
-{x:540, y:155, w:40,  h:10, c:’#55efc4’},
-{x:680, y:138, w:50,  h:10, c:’#e17055’},
-{x:830, y:120, w:40,  h:10, c:’#fdcb6e’},
-{x:980, y:138, w:50,  h:10, c:’#0984e3’},
-{x:1140,y:120, w:50,  h:10, c:’#6c5ce7’},
-{x:1300,y:105, w:50,  h:10, c:’#fd79a8’},
-{x:1440,y:120, w:80,  h:10, c:’#ffd700’},
-{x:1535,y:130, w:50,  h:10, c:’#ffd700’},
-]},
+{ bg:'#060610', accent:'#74b9ff', width:1600,
+  start:[30,170], goal:{x:1555,y:120,w:20,h:20},
+  platforms:[
+    {x:0,   y:190, w:100, h:10, c:'#74b9ff'},
+    {x:160, y:175, w:50,  h:10, c:'#a29bfe'},
+    {x:280, y:158, w:40,  h:10, c:'#fd79a8'},
+    {x:400, y:140, w:50,  h:10, c:'#ffeaa7'},
+    {x:540, y:155, w:40,  h:10, c:'#55efc4'},
+    {x:680, y:138, w:50,  h:10, c:'#e17055'},
+    {x:830, y:120, w:40,  h:10, c:'#fdcb6e'},
+    {x:980, y:138, w:50,  h:10, c:'#0984e3'},
+    {x:1140,y:120, w:50,  h:10, c:'#6c5ce7'},
+    {x:1300,y:105, w:50,  h:10, c:'#fd79a8'},
+    {x:1440,y:120, w:80,  h:10, c:'#ffd700'},
+    {x:1535,y:130, w:50,  h:10, c:'#ffd700'},
+  ]},
 // 4 — Narrow beams
-{ bg:’#100505’, accent:’#e17055’, width:1500,
-start:[30,170], goal:{x:1450,y:90,w:20,h:20},
-platforms:[
-{x:0,   y:190, w:100, h:10, c:’#e17055’},
-{x:150, y:172, w:30,  h:10, c:’#fdcb6e’},
-{x:240, y:155, w:30,  h:10, c:’#55efc4’},
-{x:330, y:138, w:30,  h:10, c:’#6c5ce7’},
-{x:420, y:120, w:30,  h:10, c:’#fd79a8’},
-{x:510, y:138, w:30,  h:10, c:’#ffeaa7’},
-{x:600, y:120, w:30,  h:10, c:’#74b9ff’},
-{x:700, y:105, w:30,  h:10, c:’#a29bfe’},
-{x:800, y:120, w:30,  h:10, c:’#55efc4’},
-{x:900, y:102, w:30,  h:10, c:’#e17055’},
-{x:1000,y:118, w:30,  h:10, c:’#fdcb6e’},
-{x:1100,y:100, w:30,  h:10, c:’#fd79a8’},
-{x:1200,y:115, w:30,  h:10, c:’#00b894’},
-{x:1310,y:100, w:30,  h:10, c:’#6c5ce7’},
-{x:1430,y:100, w:60,  h:10, c:’#ffd700’},
-]},
+{ bg:'#100505', accent:'#e17055', width:1500,
+  start:[30,170], goal:{x:1450,y:90,w:20,h:20},
+  platforms:[
+    {x:0,   y:190, w:100, h:10, c:'#e17055'},
+    {x:150, y:172, w:30,  h:10, c:'#fdcb6e'},
+    {x:240, y:155, w:30,  h:10, c:'#55efc4'},
+    {x:330, y:138, w:30,  h:10, c:'#6c5ce7'},
+    {x:420, y:120, w:30,  h:10, c:'#fd79a8'},
+    {x:510, y:138, w:30,  h:10, c:'#ffeaa7'},
+    {x:600, y:120, w:30,  h:10, c:'#74b9ff'},
+    {x:700, y:105, w:30,  h:10, c:'#a29bfe'},
+    {x:800, y:120, w:30,  h:10, c:'#55efc4'},
+    {x:900, y:102, w:30,  h:10, c:'#e17055'},
+    {x:1000,y:118, w:30,  h:10, c:'#fdcb6e'},
+    {x:1100,y:100, w:30,  h:10, c:'#fd79a8'},
+    {x:1200,y:115, w:30,  h:10, c:'#00b894'},
+    {x:1310,y:100, w:30,  h:10, c:'#6c5ce7'},
+    {x:1430,y:100, w:60,  h:10, c:'#ffd700'},
+  ]},
 // 5 — Moving feel: tall vertical platforms
-{ bg:’#001a10’, accent:’#00b894’, width:1400,
-start:[30,170], goal:{x:1350,y:40,w:20,h:20},
-platforms:[
-{x:0,   y:190, w:80,  h:10, c:’#00b894’},
-{x:140, y:160, w:60,  h:10, c:’#55efc4’},
-{x:260, y:130, w:60,  h:10, c:’#0984e3’},
-{x:380, y:100, w:60,  h:10, c:’#74b9ff’},
-{x:300, y:70,  w:60,  h:10, c:’#a29bfe’},
-{x:420, y:48,  w:60,  h:10, c:’#fd79a8’},
-{x:540, y:68,  w:60,  h:10, c:’#ffeaa7’},
-{x:660, y:48,  w:50,  h:10, c:’#e17055’},
-{x:780, y:65,  w:50,  h:10, c:’#fdcb6e’},
-{x:900, y:45,  w:50,  h:10, c:’#55efc4’},
-{x:1020,y:62,  w:50,  h:10, c:’#00b894’},
-{x:1140,y:42,  w:50,  h:10, c:’#6c5ce7’},
-{x:1260,y:55,  w:60,  h:10, c:’#fd79a8’},
-{x:1330,y:50,  w:60,  h:10, c:’#ffd700’},
-]},
+{ bg:'#001a10', accent:'#00b894', width:1400,
+  start:[30,170], goal:{x:1350,y:40,w:20,h:20},
+  platforms:[
+    {x:0,   y:190, w:80,  h:10, c:'#00b894'},
+    {x:140, y:160, w:60,  h:10, c:'#55efc4'},
+    {x:260, y:130, w:60,  h:10, c:'#0984e3'},
+    {x:380, y:100, w:60,  h:10, c:'#74b9ff'},
+    {x:300, y:70,  w:60,  h:10, c:'#a29bfe'},
+    {x:420, y:48,  w:60,  h:10, c:'#fd79a8'},
+    {x:540, y:68,  w:60,  h:10, c:'#ffeaa7'},
+    {x:660, y:48,  w:50,  h:10, c:'#e17055'},
+    {x:780, y:65,  w:50,  h:10, c:'#fdcb6e'},
+    {x:900, y:45,  w:50,  h:10, c:'#55efc4'},
+    {x:1020,y:62,  w:50,  h:10, c:'#00b894'},
+    {x:1140,y:42,  w:50,  h:10, c:'#6c5ce7'},
+    {x:1260,y:55,  w:60,  h:10, c:'#fd79a8'},
+    {x:1330,y:50,  w:60,  h:10, c:'#ffd700'},
+  ]},
 // 6 — Chaos mix
-{ bg:’#0a0005’, accent:’#fd79a8’, width:1600,
-start:[30,170], goal:{x:1560,y:50,w:20,h:20},
-platforms:[
-{x:0,   y:190, w:90,  h:10, c:’#fd79a8’},
-{x:150, y:165, w:45,  h:10, c:’#ffeaa7’},
-{x:270, y:148, w:35,  h:10, c:’#55efc4’},
-{x:380, y:130, w:55,  h:10, c:’#6c5ce7’},
-{x:510, y:148, w:35,  h:10, c:’#e17055’},
-{x:630, y:128, w:40,  h:10, c:’#fdcb6e’},
-{x:760, y:108, w:35,  h:10, c:’#00b894’},
-{x:680, y:88,  w:35,  h:10, c:’#74b9ff’},
-{x:800, y:70,  w:40,  h:10, c:’#a29bfe’},
-{x:920, y:88,  w:35,  h:10, c:’#fd79a8’},
-{x:1040,y:68,  w:35,  h:10, c:’#55efc4’},
-{x:1160,y:85,  w:40,  h:10, c:’#e17055’},
-{x:1280,y:65,  w:35,  h:10, c:’#ffd700’},
-{x:1400,y:50,  w:40,  h:10, c:’#fdcb6e’},
-{x:1540,y:60,  w:50,  h:10, c:’#ffd700’},
-]},
+{ bg:'#0a0005', accent:'#fd79a8', width:1600,
+  start:[30,170], goal:{x:1560,y:50,w:20,h:20},
+  platforms:[
+    {x:0,   y:190, w:90,  h:10, c:'#fd79a8'},
+    {x:150, y:165, w:45,  h:10, c:'#ffeaa7'},
+    {x:270, y:148, w:35,  h:10, c:'#55efc4'},
+    {x:380, y:130, w:55,  h:10, c:'#6c5ce7'},
+    {x:510, y:148, w:35,  h:10, c:'#e17055'},
+    {x:630, y:128, w:40,  h:10, c:'#fdcb6e'},
+    {x:760, y:108, w:35,  h:10, c:'#00b894'},
+    {x:680, y:88,  w:35,  h:10, c:'#74b9ff'},
+    {x:800, y:70,  w:40,  h:10, c:'#a29bfe'},
+    {x:920, y:88,  w:35,  h:10, c:'#fd79a8'},
+    {x:1040,y:68,  w:35,  h:10, c:'#55efc4'},
+    {x:1160,y:85,  w:40,  h:10, c:'#e17055'},
+    {x:1280,y:65,  w:35,  h:10, c:'#ffd700'},
+    {x:1400,y:50,  w:40,  h:10, c:'#fdcb6e'},
+    {x:1540,y:60,  w:50,  h:10, c:'#ffd700'},
+  ]},
 // 7 — Sprint challenge (wide gaps need sprint)
-{ bg:’#001010’, accent:’#0984e3’, width:1800,
-start:[30,170], goal:{x:1755,y:100,w:20,h:20},
-platforms:[
-{x:0,   y:190, w:100, h:10, c:’#0984e3’},
-{x:180, y:175, w:60,  h:10, c:’#74b9ff’},
-{x:360, y:158, w:50,  h:10, c:’#a29bfe’},
-{x:550, y:140, w:50,  h:10, c:’#fd79a8’},
-{x:750, y:155, w:50,  h:10, c:’#55efc4’},
-{x:940, y:138, w:50,  h:10, c:’#e17055’},
-{x:1140,y:120, w:50,  h:10, c:’#fdcb6e’},
-{x:1340,y:138, w:50,  h:10, c:’#00b894’},
-{x:1530,y:118, w:50,  h:10, c:’#6c5ce7’},
-{x:1680,y:100, w:30,  h:10, c:’#ffd700’},
-{x:1735,y:110, w:50,  h:10, c:’#ffd700’},
-]},
+{ bg:'#001010', accent:'#0984e3', width:1800,
+  start:[30,170], goal:{x:1755,y:100,w:20,h:20},
+  platforms:[
+    {x:0,   y:190, w:100, h:10, c:'#0984e3'},
+    {x:180, y:175, w:60,  h:10, c:'#74b9ff'},
+    {x:360, y:158, w:50,  h:10, c:'#a29bfe'},
+    {x:550, y:140, w:50,  h:10, c:'#fd79a8'},
+    {x:750, y:155, w:50,  h:10, c:'#55efc4'},
+    {x:940, y:138, w:50,  h:10, c:'#e17055'},
+    {x:1140,y:120, w:50,  h:10, c:'#fdcb6e'},
+    {x:1340,y:138, w:50,  h:10, c:'#00b894'},
+    {x:1530,y:118, w:50,  h:10, c:'#6c5ce7'},
+    {x:1680,y:100, w:30,  h:10, c:'#ffd700'},
+    {x:1735,y:110, w:50,  h:10, c:'#ffd700'},
+  ]},
 // 8 — Dense tiny platforms
-{ bg:’#050010’, accent:’#a29bfe’, width:1400,
-start:[30,170], goal:{x:1355,y:55,w:20,h:20},
-platforms:[
-{x:0,   y:190, w:80,  h:10, c:’#a29bfe’},
-{x:120, y:172, w:25,  h:10, c:’#fd79a8’},
-{x:200, y:155, w:25,  h:10, c:’#ffeaa7’},
-{x:280, y:138, w:25,  h:10, c:’#74b9ff’},
-{x:360, y:120, w:25,  h:10, c:’#55efc4’},
-{x:440, y:138, w:25,  h:10, c:’#e17055’},
-{x:520, y:118, w:25,  h:10, c:’#fdcb6e’},
-{x:600, y:100, w:25,  h:10, c:’#00b894’},
-{x:680, y:118, w:25,  h:10, c:’#6c5ce7’},
-{x:760, y:98,  w:25,  h:10, c:’#fd79a8’},
-{x:840, y:78,  w:25,  h:10, c:’#a29bfe’},
-{x:920, y:95,  w:25,  h:10, c:’#55efc4’},
-{x:1000,y:75,  w:25,  h:10, c:’#74b9ff’},
-{x:1080,y:92,  w:25,  h:10, c:’#e17055’},
-{x:1160,y:72,  w:25,  h:10, c:’#ffeaa7’},
-{x:1240,y:60,  w:25,  h:10, c:’#fdcb6e’},
-{x:1320,y:65,  w:60,  h:10, c:’#ffd700’},
-]},
+{ bg:'#050010', accent:'#a29bfe', width:1400,
+  start:[30,170], goal:{x:1355,y:55,w:20,h:20},
+  platforms:[
+    {x:0,   y:190, w:80,  h:10, c:'#a29bfe'},
+    {x:120, y:172, w:25,  h:10, c:'#fd79a8'},
+    {x:200, y:155, w:25,  h:10, c:'#ffeaa7'},
+    {x:280, y:138, w:25,  h:10, c:'#74b9ff'},
+    {x:360, y:120, w:25,  h:10, c:'#55efc4'},
+    {x:440, y:138, w:25,  h:10, c:'#e17055'},
+    {x:520, y:118, w:25,  h:10, c:'#fdcb6e'},
+    {x:600, y:100, w:25,  h:10, c:'#00b894'},
+    {x:680, y:118, w:25,  h:10, c:'#6c5ce7'},
+    {x:760, y:98,  w:25,  h:10, c:'#fd79a8'},
+    {x:840, y:78,  w:25,  h:10, c:'#a29bfe'},
+    {x:920, y:95,  w:25,  h:10, c:'#55efc4'},
+    {x:1000,y:75,  w:25,  h:10, c:'#74b9ff'},
+    {x:1080,y:92,  w:25,  h:10, c:'#e17055'},
+    {x:1160,y:72,  w:25,  h:10, c:'#ffeaa7'},
+    {x:1240,y:60,  w:25,  h:10, c:'#fdcb6e'},
+    {x:1320,y:65,  w:60,  h:10, c:'#ffd700'},
+  ]},
 // 9 — Mixed madness
-{ bg:’#0f0008’, accent:’#e17055’, width:1700,
-start:[30,170], goal:{x:1650,y:35,w:20,h:20},
-platforms:[
-{x:0,   y:190, w:90,  h:10, c:’#e17055’},
-{x:150, y:168, w:40,  h:10, c:’#fdcb6e’},
-{x:260, y:145, w:30,  h:10, c:’#55efc4’},
-{x:360, y:168, w:40,  h:10, c:’#6c5ce7’},
-{x:470, y:145, w:30,  h:10, c:’#fd79a8’},
-{x:580, y:125, w:50,  h:10, c:’#ffeaa7’},
-{x:710, y:108, w:30,  h:10, c:’#74b9ff’},
-{x:820, y:125, w:30,  h:10, c:’#a29bfe’},
-{x:930, y:105, w:30,  h:10, c:’#55efc4’},
-{x:1040,y:85,  w:40,  h:10, c:’#e17055’},
-{x:1160,y:68,  w:30,  h:10, c:’#fdcb6e’},
-{x:1270,y:85,  w:30,  h:10, c:’#00b894’},
-{x:1380,y:65,  w:30,  h:10, c:’#6c5ce7’},
-{x:1490,y:48,  w:30,  h:10, c:’#fd79a8’},
-{x:1590,y:60,  w:30,  h:10, c:’#ffeaa7’},
-{x:1630,y:45,  w:60,  h:10, c:’#ffd700’},
-]},
+{ bg:'#0f0008', accent:'#e17055', width:1700,
+  start:[30,170], goal:{x:1650,y:35,w:20,h:20},
+  platforms:[
+    {x:0,   y:190, w:90,  h:10, c:'#e17055'},
+    {x:150, y:168, w:40,  h:10, c:'#fdcb6e'},
+    {x:260, y:145, w:30,  h:10, c:'#55efc4'},
+    {x:360, y:168, w:40,  h:10, c:'#6c5ce7'},
+    {x:470, y:145, w:30,  h:10, c:'#fd79a8'},
+    {x:580, y:125, w:50,  h:10, c:'#ffeaa7'},
+    {x:710, y:108, w:30,  h:10, c:'#74b9ff'},
+    {x:820, y:125, w:30,  h:10, c:'#a29bfe'},
+    {x:930, y:105, w:30,  h:10, c:'#55efc4'},
+    {x:1040,y:85,  w:40,  h:10, c:'#e17055'},
+    {x:1160,y:68,  w:30,  h:10, c:'#fdcb6e'},
+    {x:1270,y:85,  w:30,  h:10, c:'#00b894'},
+    {x:1380,y:65,  w:30,  h:10, c:'#6c5ce7'},
+    {x:1490,y:48,  w:30,  h:10, c:'#fd79a8'},
+    {x:1590,y:60,  w:30,  h:10, c:'#ffeaa7'},
+    {x:1630,y:45,  w:60,  h:10, c:'#ffd700'},
+  ]},
 // 10 — Final gauntlet
-{ bg:’#050000’, accent:’#ffd700’, width:2000,
-start:[30,170], goal:{x:1960,y:25,w:20,h:20},
-platforms:[
-{x:0,   y:190, w:100, h:10, c:’#ffd700’},
-{x:160, y:168, w:50,  h:10, c:’#e17055’},
-{x:290, y:148, w:35,  h:10, c:’#fd79a8’},
-{x:400, y:128, w:40,  h:10, c:’#6c5ce7’},
-{x:520, y:108, w:35,  h:10, c:’#55efc4’},
-{x:640, y:128, w:35,  h:10, c:’#74b9ff’},
-{x:760, y:108, w:30,  h:10, c:’#a29bfe’},
-{x:870, y:88,  w:30,  h:10, c:’#ffeaa7’},
-{x:980, y:68,  w:30,  h:10, c:’#e17055’},
-{x:1090,y:88,  w:30,  h:10, c:’#fdcb6e’},
-{x:1200,y:68,  w:30,  h:10, c:’#00b894’},
-{x:1320,y:50,  w:30,  h:10, c:’#6c5ce7’},
-{x:1440,y:68,  w:25,  h:10, c:’#fd79a8’},
-{x:1550,y:48,  w:25,  h:10, c:’#55efc4’},
-{x:1660,y:30,  w:25,  h:10, c:’#74b9ff’},
-{x:1770,y:48,  w:25,  h:10, c:’#a29bfe’},
-{x:1880,y:28,  w:25,  h:10, c:’#ffd700’},
-{x:1940,y:35,  w:60,  h:10, c:’#ffd700’},
-]},
+{ bg:'#050000', accent:'#ffd700', width:2000,
+  start:[30,170], goal:{x:1960,y:25,w:20,h:20},
+  platforms:[
+    {x:0,   y:190, w:100, h:10, c:'#ffd700'},
+    {x:160, y:168, w:50,  h:10, c:'#e17055'},
+    {x:290, y:148, w:35,  h:10, c:'#fd79a8'},
+    {x:400, y:128, w:40,  h:10, c:'#6c5ce7'},
+    {x:520, y:108, w:35,  h:10, c:'#55efc4'},
+    {x:640, y:128, w:35,  h:10, c:'#74b9ff'},
+    {x:760, y:108, w:30,  h:10, c:'#a29bfe'},
+    {x:870, y:88,  w:30,  h:10, c:'#ffeaa7'},
+    {x:980, y:68,  w:30,  h:10, c:'#e17055'},
+    {x:1090,y:88,  w:30,  h:10, c:'#fdcb6e'},
+    {x:1200,y:68,  w:30,  h:10, c:'#00b894'},
+    {x:1320,y:50,  w:30,  h:10, c:'#6c5ce7'},
+    {x:1440,y:68,  w:25,  h:10, c:'#fd79a8'},
+    {x:1550,y:48,  w:25,  h:10, c:'#55efc4'},
+    {x:1660,y:30,  w:25,  h:10, c:'#74b9ff'},
+    {x:1770,y:48,  w:25,  h:10, c:'#a29bfe'},
+    {x:1880,y:28,  w:25,  h:10, c:'#ffd700'},
+    {x:1940,y:35,  w:60,  h:10, c:'#ffd700'},
+  ]},
 ];
 
 // ─── GAME STATE ───────────────────────────────────────────────────────────────
-var STATE = ‘title’; // title | playing | dead | win
+var STATE = 'title'; // title | playing | dead | win
 var lvlIdx = 0;
 var deaths = 0;
 var startTime = 0;
@@ -301,35 +300,35 @@ var camX = 0;
 var particles = [];
 
 function spawnParticles(x, y, color, n) {
-for (var i = 0; i < n; i++) {
-var angle = Math.random() * Math.PI * 2;
-var speed = 40 + Math.random() * 80;
-particles.push({
-x: x, y: y,
-vx: Math.cos(angle) * speed,
-vy: Math.sin(angle) * speed,
-life: 1.0,
-color: color,
-r: 1 + Math.random() * 2
-});
-}
+  for (var i = 0; i < n; i++) {
+    var angle = Math.random() * Math.PI * 2;
+    var speed = 40 + Math.random() * 80;
+    particles.push({
+      x: x, y: y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 1.0,
+      color: color,
+      r: 1 + Math.random() * 2
+    });
+  }
 }
 
 // ─── LEVEL LOAD ───────────────────────────────────────────────────────────────
 function loadLevel(idx) {
-var lvl = LEVELS[idx];
-p.x = lvl.start[0];
-p.y = lvl.start[1] - PH;  // place feet at start y
-p.vx = 0; p.vy = 0;
-p.onGround = false;
-p.jumpsLeft = 2;
-camX = 0;
-particles = [];
+  var lvl = LEVELS[idx];
+  p.x = lvl.start[0];
+  p.y = lvl.start[1] - PH;  // place feet at start y
+  p.vx = 0; p.vy = 0;
+  p.onGround = false;
+  p.jumpsLeft = 2;
+  camX = 0;
+  particles = [];
 }
 
 // ─── COLLISION HELPERS ────────────────────────────────────────────────────────
 function rectOverlap(ax,ay,aw,ah, bx,by,bw,bh) {
-return ax < bx+bw && ax+aw > bx && ay < by+bh && ay+ah > by;
+  return ax < bx+bw && ax+aw > bx && ay < by+bh && ay+ah > by;
 }
 
 // ─── UPDATE ───────────────────────────────────────────────────────────────────
@@ -340,393 +339,389 @@ var spaceWasDown = false;
 var gpAWasDown   = false;
 
 function update(now) {
-var dt = Math.min((now - prevTime) / 1000, 0.05);
-prevTime = now;
+  var dt = Math.min((now - prevTime) / 1000, 0.05);
+  prevTime = now;
 
-if (STATE === ‘dead’) {
-deathTimer -= dt;
-if (deathTimer <= 0) {
-loadLevel(lvlIdx);
-STATE = ‘playing’;
-}
-return;
-}
-if (STATE !== ‘playing’) return;
+  if (STATE === 'dead') {
+    deathTimer -= dt;
+    if (deathTimer <= 0) {
+      loadLevel(lvlIdx);
+      STATE = 'playing';
+    }
+    return;
+  }
+  if (STATE !== 'playing') return;
 
-var lvl = LEVELS[lvlIdx];
+  var lvl = LEVELS[lvlIdx];
 
-// ── Gamepad ──
-var pad   = getGP();
-var gpA   = gpBtn(pad, 0);   // A = jump
-var gpR   = gpBtn(pad, 5);   // R = sprint
-var gpLX  = gpAxis(pad, 0);  // Circle pad X
-var gpDL  = gpBtn(pad, 14);
-var gpDR  = gpBtn(pad, 15);
-var gpDU  = gpBtn(pad, 12);
+  // ── Gamepad ──
+  var pad   = getGP();
+  var gpA   = gpBtn(pad, 0);   // A = jump
+  var gpR   = gpBtn(pad, 5);   // R = sprint
+  var gpLX  = gpAxis(pad, 0);  // Circle pad X
+  var gpDL  = gpBtn(pad, 14);
+  var gpDR  = gpBtn(pad, 15);
+  var gpDU  = gpBtn(pad, 12);
 
-// Jump: space bar or A button (edge detect)
-var spaceDown = !!(keys[‘Space’] || keys[‘ArrowUp’] || keys[‘KeyW’] || gpDU);
-var gpADown   = gpA;
-var jumpEdge  = (spaceDown && !spaceWasDown) || (gpADown && !gpAWasDown);
-spaceWasDown  = spaceDown;
-gpAWasDown    = gpADown;
+  // Jump: space bar or A button (edge detect)
+  var spaceDown = !!(keys['Space'] || keys['ArrowUp'] || keys['KeyW'] || gpDU);
+  var gpADown   = gpA;
+  var jumpEdge  = (spaceDown && !spaceWasDown) || (gpADown && !gpAWasDown);
+  spaceWasDown  = spaceDown;
+  gpAWasDown    = gpADown;
 
-if (jumpEdge && p.jumpsLeft > 0) {
-p.vy = JUMP_VEL;
-p.jumpsLeft–;
-p.onGround = false;
-spawnParticles(p.x + PW/2, p.y + PH, ‘#ffffff’, 6);
-}
+  if (jumpEdge && p.jumpsLeft > 0) {
+    p.vy = JUMP_VEL;
+    p.jumpsLeft--;
+    p.onGround = false;
+    spawnParticles(p.x + PW/2, p.y + PH, '#ffffff', 6);
+  }
 
-// Move
-var left    = !!(keys[‘KeyA’] || keys[‘ArrowLeft’]  || gpDL || gpLX < 0 || touch.left);
-var right   = !!(keys[‘KeyD’] || keys[‘ArrowRight’] || gpDR || gpLX > 0 || touch.right);
-var sprint  = !!(keys[‘ShiftLeft’] || keys[‘ShiftRight’] || gpR || touch.sprint);
-var spd     = sprint ? SPRINT : SPEED;
+  // Move
+  var left    = !!(keys['KeyA'] || keys['ArrowLeft']  || gpDL || gpLX < 0 || touch.left);
+  var right   = !!(keys['KeyD'] || keys['ArrowRight'] || gpDR || gpLX > 0 || touch.right);
+  var sprint  = !!(keys['ShiftLeft'] || keys['ShiftRight'] || gpR || touch.sprint);
+  var spd     = sprint ? SPRINT : SPEED;
 
-if (left)       p.vx = -spd;
-else if (right) p.vx =  spd;
-else            p.vx =  0;
+  if (left)       p.vx = -spd;
+  else if (right) p.vx =  spd;
+  else            p.vx =  0;
 
-// Gravity
-p.vy += GRAVITY * dt;
+  // Gravity
+  p.vy += GRAVITY * dt;
 
-// Move X
-p.x += p.vx * dt;
-// Clamp to level bounds
-if (p.x < 0) p.x = 0;
-if (p.x + PW > lvl.width) p.x = lvl.width - PW;
+  // Move X
+  p.x += p.vx * dt;
+  // Clamp to level bounds
+  if (p.x < 0) p.x = 0;
+  if (p.x + PW > lvl.width) p.x = lvl.width - PW;
 
-// Move Y
-p.y += p.vy * dt;
-p.onGround = false;
+  // Move Y
+  p.y += p.vy * dt;
+  p.onGround = false;
 
-// Platform collision (Y first, then clamped)
-var plats = lvl.platforms;
-for (var i = 0; i < plats.length; i++) {
-var pl = plats[i];
-if (!rectOverlap(p.x, p.y, PW, PH, pl.x, pl.y, pl.w, pl.h)) continue;
+  // Platform collision (Y first, then clamped)
+  var plats = lvl.platforms;
+  for (var i = 0; i < plats.length; i++) {
+    var pl = plats[i];
+    if (!rectOverlap(p.x, p.y, PW, PH, pl.x, pl.y, pl.w, pl.h)) continue;
 
-```
-// Coming from above — land
-if (p.vy >= 0 && p.y + PH - p.vy*dt <= pl.y + 2) {
-  p.y = pl.y - PH;
-  p.vy = 0;
-  p.onGround = true;
-  p.jumpsLeft = 2;
-}
-// Coming from below — bonk
-else if (p.vy < 0 && p.y - p.vy*dt >= pl.y + pl.h - 2) {
-  p.y = pl.y + pl.h;
-  p.vy = 0;
-}
-```
+    // Coming from above — land
+    if (p.vy >= 0 && p.y + PH - p.vy*dt <= pl.y + 2) {
+      p.y = pl.y - PH;
+      p.vy = 0;
+      p.onGround = true;
+      p.jumpsLeft = 2;
+    }
+    // Coming from below — bonk
+    else if (p.vy < 0 && p.y - p.vy*dt >= pl.y + pl.h - 2) {
+      p.y = pl.y + pl.h;
+      p.vy = 0;
+    }
+  }
 
-}
+  // Death — fall off screen
+  if (p.y > H + 30) {
+    deaths++;
+    spawnParticles(p.x + PW/2, H, '#ff4444', 12);
+    STATE = 'dead';
+    deathTimer = 0.7;
+    return;
+  }
 
-// Death — fall off screen
-if (p.y > H + 30) {
-deaths++;
-spawnParticles(p.x + PW/2, H, ‘#ff4444’, 12);
-STATE = ‘dead’;
-deathTimer = 0.7;
-return;
-}
+  // Goal check
+  var g = lvl.goal;
+  if (rectOverlap(p.x, p.y, PW, PH, g.x, g.y, g.w, g.h)) {
+    spawnParticles(g.x + g.w/2, g.y + g.h/2, '#ffd700', 20);
+    if (lvlIdx >= LEVELS.length - 1) {
+      STATE = 'win';
+    } else {
+      lvlIdx++;
+      loadLevel(lvlIdx);
+    }
+    return;
+  }
 
-// Goal check
-var g = lvl.goal;
-if (rectOverlap(p.x, p.y, PW, PH, g.x, g.y, g.w, g.h)) {
-spawnParticles(g.x + g.w/2, g.y + g.h/2, ‘#ffd700’, 20);
-if (lvlIdx >= LEVELS.length - 1) {
-STATE = ‘win’;
-} else {
-lvlIdx++;
-loadLevel(lvlIdx);
-}
-return;
-}
+  // Camera: follow player, clamp to level
+  var targetCam = p.x - W / 2 + PW / 2;
+  var maxCam    = lvl.width - W;
+  camX += (targetCam - camX) * 0.12;
+  if (camX < 0)      camX = 0;
+  if (camX > maxCam) camX = maxCam;
 
-// Camera: follow player, clamp to level
-var targetCam = p.x - W / 2 + PW / 2;
-var maxCam    = lvl.width - W;
-camX += (targetCam - camX) * 0.12;
-if (camX < 0)      camX = 0;
-if (camX > maxCam) camX = maxCam;
-
-// Particles
-for (var j = particles.length - 1; j >= 0; j–) {
-var pt = particles[j];
-pt.x  += pt.vx * dt;
-pt.y  += pt.vy * dt;
-pt.vy += GRAVITY * 0.3 * dt;
-pt.life -= dt * 2;
-if (pt.life <= 0) particles.splice(j, 1);
-}
+  // Particles
+  for (var j = particles.length - 1; j >= 0; j--) {
+    var pt = particles[j];
+    pt.x  += pt.vx * dt;
+    pt.y  += pt.vy * dt;
+    pt.vy += GRAVITY * 0.3 * dt;
+    pt.life -= dt * 2;
+    if (pt.life <= 0) particles.splice(j, 1);
+  }
 }
 
 // ─── DRAW ─────────────────────────────────────────────────────────────────────
 function hexA(hex, a) {
-// Convert #rrggbb to rgba
-var r = parseInt(hex.slice(1,3),16);
-var g = parseInt(hex.slice(3,5),16);
-var b = parseInt(hex.slice(5,7),16);
-return ‘rgba(’+r+’,’+g+’,’+b+’,’+a+’)’;
+  // Convert #rrggbb to rgba
+  var r = parseInt(hex.slice(1,3),16);
+  var g = parseInt(hex.slice(3,5),16);
+  var b = parseInt(hex.slice(5,7),16);
+  return 'rgba('+r+','+g+','+b+','+a+')';
 }
 
 function draw() {
-var lvl = LEVELS[lvlIdx];
+  var lvl = LEVELS[lvlIdx];
 
-// Background
-ctx.fillStyle = (STATE === ‘title’ || STATE === ‘win’) ? ‘#050005’ : lvl.bg;
-ctx.fillRect(0, 0, W, H);
+  // Background
+  ctx.fillStyle = (STATE === 'title' || STATE === 'win') ? '#050005' : lvl.bg;
+  ctx.fillRect(0, 0, W, H);
 
-if (STATE === ‘title’) {
-drawTitle();
-return;
-}
-if (STATE === ‘win’) {
-drawWin();
-return;
-}
+  if (STATE === 'title') {
+    drawTitle();
+    return;
+  }
+  if (STATE === 'win') {
+    drawWin();
+    return;
+  }
 
-// Stars (cheap parallax)
-ctx.fillStyle = ‘rgba(255,255,255,0.5)’;
-// deterministic star positions
-for (var s = 0; s < 40; s++) {
-var sx = ((s * 137 + 50) % W);
-var sy = ((s * 97  + 20) % (H - 30));
-// parallax: stars scroll at 20% speed
-var starX = (sx - camX * 0.05 + W * 10) % W;
-ctx.fillRect(starX, sy, 1, 1);
-}
+  // Stars (cheap parallax)
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  // deterministic star positions
+  for (var s = 0; s < 40; s++) {
+    var sx = ((s * 137 + 50) % W);
+    var sy = ((s * 97  + 20) % (H - 30));
+    // parallax: stars scroll at 20% speed
+    var starX = (sx - camX * 0.05 + W * 10) % W;
+    ctx.fillRect(starX, sy, 1, 1);
+  }
 
-ctx.save();
-ctx.translate(-camX, 0);
+  ctx.save();
+  ctx.translate(-camX, 0);
 
-// Platforms
-var plats = lvl.platforms;
-for (var i = 0; i < plats.length; i++) {
-var pl = plats[i];
-ctx.fillStyle = pl.c;
-ctx.fillRect(pl.x, pl.y, pl.w, pl.h);
-// top highlight
-ctx.fillStyle = ‘rgba(255,255,255,0.25)’;
-ctx.fillRect(pl.x, pl.y, pl.w, 2);
-}
+  // Platforms
+  var plats = lvl.platforms;
+  for (var i = 0; i < plats.length; i++) {
+    var pl = plats[i];
+    ctx.fillStyle = pl.c;
+    ctx.fillRect(pl.x, pl.y, pl.w, pl.h);
+    // top highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fillRect(pl.x, pl.y, pl.w, 2);
+  }
 
-// Goal (pulsing star)
-var g = lvl.goal;
-var pulse = 0.7 + 0.3 * Math.sin(Date.now() / 200);
-ctx.fillStyle = ‘rgba(255,215,0,’ + pulse + ‘)’;
-ctx.fillRect(g.x, g.y, g.w, g.h);
-ctx.fillStyle = ‘#fff’;
-ctx.fillRect(g.x + 7, g.y - 4, 6, 6); // little star on top
-ctx.fillRect(g.x + 4, g.y + 2, 12, 4);
-ctx.fillRect(g.x + 7, g.y + 8, 6, 6);
+  // Goal (pulsing star)
+  var g = lvl.goal;
+  var pulse = 0.7 + 0.3 * Math.sin(Date.now() / 200);
+  ctx.fillStyle = 'rgba(255,215,0,' + pulse + ')';
+  ctx.fillRect(g.x, g.y, g.w, g.h);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(g.x + 7, g.y - 4, 6, 6); // little star on top
+  ctx.fillRect(g.x + 4, g.y + 2, 12, 4);
+  ctx.fillRect(g.x + 7, g.y + 8, 6, 6);
 
-// Player
-if (STATE === ‘playing’) {
-// Body
-ctx.fillStyle = ‘#ff4444’;
-ctx.fillRect(p.x, p.y, PW, PH);
-// Eyes
-ctx.fillStyle = ‘#fff’;
-ctx.fillRect(p.x + 2, p.y + 3, 3, 3);
-ctx.fillRect(p.x + 6, p.y + 3, 3, 3);
-ctx.fillStyle = ‘#000’;
-ctx.fillRect(p.x + 3, p.y + 4, 1, 2);
-ctx.fillRect(p.x + 7, p.y + 4, 1, 2);
-// Shadow
-ctx.fillStyle = ‘rgba(0,0,0,0.3)’;
-ctx.fillRect(p.x + 1, p.y + PH, PW - 2, 2);
-}
+  // Player
+  if (STATE === 'playing') {
+    // Body
+    ctx.fillStyle = '#ff4444';
+    ctx.fillRect(p.x, p.y, PW, PH);
+    // Eyes
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(p.x + 2, p.y + 3, 3, 3);
+    ctx.fillRect(p.x + 6, p.y + 3, 3, 3);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(p.x + 3, p.y + 4, 1, 2);
+    ctx.fillRect(p.x + 7, p.y + 4, 1, 2);
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(p.x + 1, p.y + PH, PW - 2, 2);
+  }
 
-// Particles
-for (var j = 0; j < particles.length; j++) {
-var pt = particles[j];
-ctx.globalAlpha = pt.life;
-ctx.fillStyle   = pt.color;
-ctx.fillRect(pt.x - pt.r, pt.y - pt.r, pt.r*2, pt.r*2);
-}
-ctx.globalAlpha = 1;
+  // Particles
+  for (var j = 0; j < particles.length; j++) {
+    var pt = particles[j];
+    ctx.globalAlpha = pt.life;
+    ctx.fillStyle   = pt.color;
+    ctx.fillRect(pt.x - pt.r, pt.y - pt.r, pt.r*2, pt.r*2);
+  }
+  ctx.globalAlpha = 1;
 
-ctx.restore();
+  ctx.restore();
 
-// ── HUD ──
-ctx.fillStyle = ‘rgba(0,0,0,0.5)’;
-ctx.fillRect(0, 0, W, 18);
+  // ── HUD ──
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(0, 0, W, 18);
 
-ctx.font = ‘bold 10px monospace’;
-ctx.fillStyle = ‘#ffd700’;
-ctx.fillText(’LVL ’ + (lvlIdx+1) + ‘/10’, 5, 12);
+  ctx.font = 'bold 10px monospace';
+  ctx.fillStyle = '#ffd700';
+  ctx.fillText('LVL ' + (lvlIdx+1) + '/10', 5, 12);
 
-var elapsed = (Date.now() - startTime) / 1000;
-var mm = Math.floor(elapsed/60), ss = Math.floor(elapsed%60);
-if (ss < 10) ss = ‘0’ + ss;
-ctx.fillStyle = ‘#aaf’;
-ctx.fillText(mm+’:’+ss, W/2 - 14, 12);
+  var elapsed = (Date.now() - startTime) / 1000;
+  var mm = Math.floor(elapsed/60), ss = Math.floor(elapsed%60);
+  if (ss < 10) ss = '0' + ss;
+  ctx.fillStyle = '#aaf';
+  ctx.fillText(mm+':'+ss, W/2 - 14, 12);
 
-ctx.fillStyle = ‘#f88’;
-ctx.fillText(‘x’ + deaths, W - 30, 12);
+  ctx.fillStyle = '#f88';
+  ctx.fillText('x' + deaths, W - 30, 12);
 
-// Progress bar
-var progress = (p.x + camX) / (lvl.width - W + p.x);
-ctx.fillStyle = ‘rgba(255,215,0,0.2)’;
-ctx.fillRect(0, H-3, W, 3);
-ctx.fillStyle = ‘#ffd700’;
-ctx.fillRect(0, H-3, Math.min(W, W * (p.x / lvl.width)), 3);
+  // Progress bar
+  var progress = (p.x + camX) / (lvl.width - W + p.x);
+  ctx.fillStyle = 'rgba(255,215,0,0.2)';
+  ctx.fillRect(0, H-3, W, 3);
+  ctx.fillStyle = '#ffd700';
+  ctx.fillRect(0, H-3, Math.min(W, W * (p.x / lvl.width)), 3);
 
-// Controls hint (fades after 5 seconds)
-var elapsed2 = (Date.now() - startTime) / 1000;
-if (elapsed2 < 5) {
-var alpha = elapsed2 < 4 ? 0.7 : (5 - elapsed2) * 0.7;
-ctx.fillStyle = ‘rgba(0,0,0,’ + (alpha * 0.6) + ‘)’;
-ctx.fillRect(0, H - 22, W, 19);
-ctx.font = ‘8px monospace’;
-ctx.fillStyle = ‘rgba(255,220,100,’ + alpha + ‘)’;
-ctx.fillText(‘ARROWS/WASD:MOVE  UP/A:JUMP  SHIFT/R:SPRINT’, 4, H - 10);
-}
+  // Controls hint (fades after 5 seconds)
+  var elapsed2 = (Date.now() - startTime) / 1000;
+  if (elapsed2 < 5) {
+    var alpha = elapsed2 < 4 ? 0.7 : (5 - elapsed2) * 0.7;
+    ctx.fillStyle = 'rgba(0,0,0,' + (alpha * 0.6) + ')';
+    ctx.fillRect(0, H - 22, W, 19);
+    ctx.font = '8px monospace';
+    ctx.fillStyle = 'rgba(255,220,100,' + alpha + ')';
+    ctx.fillText('ARROWS/WASD:MOVE  UP/A:JUMP  SHIFT/R:SPRINT', 4, H - 10);
+  }
 
-// Dead overlay
-if (STATE === ‘dead’) {
-ctx.fillStyle = ‘rgba(200,0,0,0.4)’;
-ctx.fillRect(0, 0, W, H);
-ctx.font = ‘bold 16px monospace’;
-ctx.fillStyle = ‘#ff4444’;
-ctx.textAlign = ‘center’;
-ctx.fillText(‘OOPS!’, W/2, H/2);
-ctx.textAlign = ‘left’;
-}
+  // Dead overlay
+  if (STATE === 'dead') {
+    ctx.fillStyle = 'rgba(200,0,0,0.4)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.font = 'bold 16px monospace';
+    ctx.fillStyle = '#ff4444';
+    ctx.textAlign = 'center';
+    ctx.fillText('OOPS!', W/2, H/2);
+    ctx.textAlign = 'left';
+  }
 }
 
 function drawTitle() {
-// Animated dots background
-var t = Date.now() / 1000;
-ctx.fillStyle = ‘rgba(255,215,0,0.04)’;
-for (var i = 0; i < 20; i++) {
-var dx = (i * 73 + t * 20) % W;
-var dy = (i * 53 + t * 15) % H;
-ctx.fillRect(dx, dy, 2, 2);
-}
+  // Animated dots background
+  var t = Date.now() / 1000;
+  ctx.fillStyle = 'rgba(255,215,0,0.04)';
+  for (var i = 0; i < 20; i++) {
+    var dx = (i * 73 + t * 20) % W;
+    var dy = (i * 53 + t * 15) % H;
+    ctx.fillRect(dx, dy, 2, 2);
+  }
 
-// Title
-ctx.textAlign = ‘center’;
-ctx.font = ‘bold 28px monospace’;
-ctx.fillStyle = ‘#ffd700’;
-ctx.shadowColor = ‘#ff8800’;
-ctx.shadowBlur  = 12;
-ctx.fillText(‘PARKOUR’, W/2, 70);
-ctx.fillText(‘RUSH’, W/2, 100);
-ctx.shadowBlur = 0;
+  // Title
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 28px monospace';
+  ctx.fillStyle = '#ffd700';
+  ctx.shadowColor = '#ff8800';
+  ctx.shadowBlur  = 12;
+  ctx.fillText('PARKOUR', W/2, 70);
+  ctx.fillText('RUSH', W/2, 100);
+  ctx.shadowBlur = 0;
 
-ctx.font = ‘8px monospace’;
-ctx.fillStyle = ‘#888’;
-ctx.fillText(‘10 LEVELS  |  2D PLATFORMER’, W/2, 120);
+  ctx.font = '8px monospace';
+  ctx.fillStyle = '#888';
+  ctx.fillText('10 LEVELS  |  2D PLATFORMER', W/2, 120);
 
-ctx.font = ‘9px monospace’;
-ctx.fillStyle = ‘#aaa’;
-ctx.fillText(‘ARROWS / WASD  =  MOVE’, W/2, 148);
-ctx.fillText(‘UP / A  =  JUMP  (x2 double jump)’, W/2, 160);
-ctx.fillText(‘SHIFT / R  =  SPRINT’, W/2, 172);
+  ctx.font = '9px monospace';
+  ctx.fillStyle = '#aaa';
+  ctx.fillText('ARROWS / WASD  =  MOVE', W/2, 148);
+  ctx.fillText('UP / A  =  JUMP  (x2 double jump)', W/2, 160);
+  ctx.fillText('SHIFT / R  =  SPRINT', W/2, 172);
 
-// Blink start text
-if (Math.floor(t * 2) % 2 === 0) {
-ctx.font = ‘bold 11px monospace’;
-ctx.fillStyle = ‘#ffd700’;
-ctx.fillText(‘PRESS ANY KEY OR A TO START’, W/2, 210);
-}
-ctx.textAlign = ‘left’;
+  // Blink start text
+  if (Math.floor(t * 2) % 2 === 0) {
+    ctx.font = 'bold 11px monospace';
+    ctx.fillStyle = '#ffd700';
+    ctx.fillText('PRESS ANY KEY OR A TO START', W/2, 210);
+  }
+  ctx.textAlign = 'left';
 }
 
 function drawWin() {
-var t = Date.now() / 1000;
+  var t = Date.now() / 1000;
 
-// Gold sparkles
-for (var i = 0; i < particles.length; i++) {
-var pt = particles[i];
-ctx.globalAlpha = pt.life;
-ctx.fillStyle = pt.color;
-ctx.fillRect(pt.x - pt.r, pt.y - pt.r, pt.r*2, pt.r*2);
-}
-ctx.globalAlpha = 1;
+  // Gold sparkles
+  for (var i = 0; i < particles.length; i++) {
+    var pt = particles[i];
+    ctx.globalAlpha = pt.life;
+    ctx.fillStyle = pt.color;
+    ctx.fillRect(pt.x - pt.r, pt.y - pt.r, pt.r*2, pt.r*2);
+  }
+  ctx.globalAlpha = 1;
 
-ctx.textAlign = ‘center’;
-ctx.font = ‘bold 22px monospace’;
-ctx.fillStyle = ‘#ffd700’;
-ctx.shadowColor = ‘#ff8800’; ctx.shadowBlur = 14;
-ctx.fillText(‘YOU WIN!’, W/2, 80);
-ctx.shadowBlur = 0;
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 22px monospace';
+  ctx.fillStyle = '#ffd700';
+  ctx.shadowColor = '#ff8800'; ctx.shadowBlur = 14;
+  ctx.fillText('YOU WIN!', W/2, 80);
+  ctx.shadowBlur = 0;
 
-var elapsed = (Date.now() - startTime) / 1000;
-var mm = Math.floor(elapsed/60), ss = Math.floor(elapsed%60);
-if (ss < 10) ss = ‘0’ + ss;
+  var elapsed = (Date.now() - startTime) / 1000;
+  var mm = Math.floor(elapsed/60), ss = Math.floor(elapsed%60);
+  if (ss < 10) ss = '0' + ss;
 
-ctx.font = ‘10px monospace’;
-ctx.fillStyle = ‘#aaf’;
-ctx.fillText(‘ALL 10 LEVELS COMPLETE’, W/2, 108);
-ctx.fillStyle = ‘#fff’;
-ctx.fillText(’TIME: ’ + mm + ‘:’ + ss + ’   DEATHS: ’ + deaths, W/2, 124);
+  ctx.font = '10px monospace';
+  ctx.fillStyle = '#aaf';
+  ctx.fillText('ALL 10 LEVELS COMPLETE', W/2, 108);
+  ctx.fillStyle = '#fff';
+  ctx.fillText('TIME: ' + mm + ':' + ss + '   DEATHS: ' + deaths, W/2, 124);
 
-if (Math.floor(t * 2) % 2 === 0) {
-ctx.font = ‘bold 10px monospace’;
-ctx.fillStyle = ‘#ffd700’;
-ctx.fillText(‘PRESS ANY KEY TO PLAY AGAIN’, W/2, 160);
-}
-ctx.textAlign = ‘left’;
+  if (Math.floor(t * 2) % 2 === 0) {
+    ctx.font = 'bold 10px monospace';
+    ctx.fillStyle = '#ffd700';
+    ctx.fillText('PRESS ANY KEY TO PLAY AGAIN', W/2, 160);
+  }
+  ctx.textAlign = 'left';
 }
 
 // ─── START TRIGGER ────────────────────────────────────────────────────────────
 function startGame() {
-lvlIdx = 0; deaths = 0;
-loadLevel(0);
-startTime = Date.now();
-STATE = ‘playing’;
-spaceWasDown = true; // prevent immediate jump on start
-gpAWasDown   = true;
+  lvlIdx = 0; deaths = 0;
+  loadLevel(0);
+  startTime = Date.now();
+  STATE = 'playing';
+  spaceWasDown = true; // prevent immediate jump on start
+  gpAWasDown   = true;
 }
 
-document.addEventListener(‘keydown’, function(e) {
-if (STATE === ‘title’ || STATE === ‘win’) {
-startGame();
-}
+document.addEventListener('keydown', function(e) {
+  if (STATE === 'title' || STATE === 'win') {
+    startGame();
+  }
 });
-window.addEventListener(‘gamepadconnected’, function() {});
+window.addEventListener('gamepadconnected', function() {});
 // Poll for gamepad A press on title/win screens
 var titlePollPrev = false;
 
 // ─── LOOP ─────────────────────────────────────────────────────────────────────
 function loop(now) {
-requestAnimationFrame(loop);
+  requestAnimationFrame(loop);
 
-// Gamepad title screen start
-var pad2 = getGP();
-var aDown = gpBtn(pad2, 0) || gpBtn(pad2, 8); // A or Start
-if ((STATE === ‘title’ || STATE === ‘win’) && aDown && !titlePollPrev) {
-startGame();
-}
-titlePollPrev = aDown;
+  // Gamepad title screen start
+  var pad2 = getGP();
+  var aDown = gpBtn(pad2, 0) || gpBtn(pad2, 8); // A or Start
+  if ((STATE === 'title' || STATE === 'win') && aDown && !titlePollPrev) {
+    startGame();
+  }
+  titlePollPrev = aDown;
 
-// Win screen particles
-if (STATE === ‘win’) {
-var dt2 = 0.016;
-if (Math.random() < 0.3) {
-spawnParticles(Math.random()*W, Math.random()*H*0.5, ‘#ffd700’, 2);
-}
-for (var j = particles.length-1; j>=0; j–) {
-var pt = particles[j];
-pt.x += pt.vx * dt2; pt.y += pt.vy * dt2;
-pt.vy += 60 * dt2;
-pt.life -= dt2 * 1.5;
-if (pt.life <= 0) particles.splice(j,1);
-}
-}
+  // Win screen particles
+  if (STATE === 'win') {
+    var dt2 = 0.016;
+    if (Math.random() < 0.3) {
+      spawnParticles(Math.random()*W, Math.random()*H*0.5, '#ffd700', 2);
+    }
+    for (var j = particles.length-1; j>=0; j--) {
+      var pt = particles[j];
+      pt.x += pt.vx * dt2; pt.y += pt.vy * dt2;
+      pt.vy += 60 * dt2;
+      pt.life -= dt2 * 1.5;
+      if (pt.life <= 0) particles.splice(j,1);
+    }
+  }
 
-update(now);
-draw();
+  update(now);
+  draw();
 }
 
 requestAnimationFrame(function(t) { prevTime = t; loop(t); });
 </script>
-
 </body>
 </html>
