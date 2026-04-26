@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PARKOUR RUSH — 3D Platformer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #000; overflow: hidden; font-family: 'Courier New', monospace; }
+  #c { display: block; width: 100vw; height: 100vh; }
+  #hud {
+    position: fixed; top: 0; left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 18px 28px; pointer-events: none; z-index: 10;
+  }
+  .hud-box {
+    background: rgba(0,0,0,0.55);
+    border: 1px solid rgba(255,200,0,0.4);
+    padding: 8px 18px;
+    color: #ffd700;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  #screen {
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; z-index: 20;
+    background: rgba(0,0,0,0.82);
+  }
+  #screen h1 {
+    font-size: clamp(32px, 6vw, 72px);
+    color: #ffd700;
+    letter-spacing: 8px;
+    text-transform: uppercase;
+    text-shadow: 0 0 30px #ffa500, 0 0 60px #ff6600;
+    margin-bottom: 12px;
+  }
+  #screen p { color: #ccc; font-size: 14px; letter-spacing: 2px; margin: 6px 0; }
+  #screen .sub { color: #888; font-size: 12px; margin-top: 18px; line-height: 1.9; text-align: center; }
+  #startBtn {
+    margin-top: 28px;
+    padding: 14px 48px;
+    background: #ffd700;
+    color: #000;
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+    font-weight: bold;
+    letter-spacing: 4px;
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  #startBtn:hover { background: #ff9900; transform: scale(1.05); }
+  #levelBadge {
+    font-size: clamp(40px, 8vw, 100px);
+    color: #ffd700;
+    text-shadow: 0 0 40px #ffd700;
+    margin-bottom: 10px;
+  }
+  #controls {
+    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+    color: rgba(255,200,0,0.45); font-size: 11px; letter-spacing: 2px;
+    pointer-events: none; z-index: 10; text-align: center; line-height: 1.9;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div class="hud-box" id="levelHud">LEVEL 1</div>
+  <div class="hud-box" id="timeHud">TIME 0:00</div>
+  <div class="hud-box" id="deathHud">DEATHS 0</div>
+</div>
+<div id="controls">
+  KB: WASD/ARROWS — MOVE &nbsp;|&nbsp; SPACE — JUMP (x2 double jump) &nbsp;|&nbsp; SHIFT — SPRINT<br>
+  3DS: Circle Pad — MOVE &nbsp;|&nbsp; A — JUMP (x2 double jump) &nbsp;|&nbsp; R — SPRINT &nbsp;|&nbsp; C-Stick / D-Pad — CAMERA
+</div>
+<div id="screen">
+  <h1>Parkour Rush</h1>
+  <p>10 LEVELS OF VERTICAL CHAOS</p>
+  <div class="sub">
+    <span style="color:#ffd700">KEYBOARD:</span> WASD move &nbsp;·&nbsp; SPACE jump &nbsp;·&nbsp; double-SPACE double jump &nbsp;·&nbsp; SHIFT sprint<br>
+    <span style="color:#ffd700">3DS:</span> Circle Pad move &nbsp;·&nbsp; A jump &nbsp;·&nbsp; double-A double jump &nbsp;·&nbsp; R sprint &nbsp;·&nbsp; C-Stick / D-Pad camera
+  </div>
+  <button id="startBtn" onclick="startGame()">START GAME</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+// ─── RENDERER ────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setSize(innerWidth, innerHeight);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 800);
+window.addEventListener('resize', () => {
+  renderer.setSize(innerWidth, innerHeight);
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+});
+
+// ─── LEVELS ──────────────────────────────────────────────────────────────────
+// Platform: [cx, topY, cz, width, height, depth, color]
+// topY = Y of the TOP SURFACE of the platform
+const LEVELS = [
+  { sky:0x1a1a2e, fog:0x1a1a2e, fogDist:120, start:[0,0,0], goal:[0,12,-60],
+    platforms:[
+      [0,0,0,8,1,8,'#4ecdc4'],[0,2,-14,6,1,6,'#45b7d1'],[5,4,-26,6,1,6,'#96ceb4'],
+      [-4,6,-38,6,1,6,'#ffeaa7'],[0,8,-50,6,1,6,'#fd79a8'],[0,11,-60,5,1,5,'#a29bfe']]},
+  { sky:0x0d1b2a, fog:0x0d1b2a, fogDist:130, start:[0,0,0], goal:[30,18,-60],
+    platforms:[
+      [0,0,0,7,1,7,'#e17055'],[10,3,-12,5,1,5,'#fdcb6e'],[0,6,-24,5,1,5,'#00b894'],
+      [12,9,-36,5,1,5,'#0984e3'],[22,12,-48,5,1,5,'#6c5ce7'],[30,17,-60,5,1,5,'#fd79a8']]},
+  { sky:0x1e0a2e, fog:0x1e0a2e, fogDist:100, start:[0,0,0], goal:[0,36,-10],
+    platforms:[
+      [0,0,0,6,1,6,'#74b9ff'],[5,6,-5,4,1,4,'#a29bfe'],[-5,12,-8,4,1,4,'#fd79a8'],
+      [5,18,-10,4,1,4,'#ffeaa7'],[-4,24,-12,4,1,4,'#55efc4'],[0,30,-10,4,1,4,'#e17055'],
+      [0,35,-10,4,1,4,'#fdcb6e']]},
+  { sky:0x0a0a0a, fog:0x111111, fogDist:160, start:[0,0,0], goal:[0,10,-100],
+    platforms:[
+      [0,0,0,8,1,8,'#e17055'],[0,2,-20,5,1,3,'#fdcb6e'],[-8,3,-40,4,1,3,'#00cec9'],
+      [8,5,-58,4,1,3,'#6c5ce7'],[0,6,-76,5,1,3,'#fd79a8'],[0,9,-100,6,1,6,'#55efc4']]},
+  { sky:0x000510, fog:0x000510, fogDist:120, start:[0,0,0], goal:[0,40,0],
+    platforms:[
+      [0,0,0,6,1,6,'#74b9ff'],[8,5,0,4,1,4,'#a29bfe'],[8,10,-8,4,1,4,'#fd79a8'],
+      [0,15,-8,4,1,4,'#ffeaa7'],[-8,20,-8,4,1,4,'#55efc4'],[-8,25,0,4,1,4,'#e17055'],
+      [-8,30,8,4,1,4,'#fdcb6e'],[0,35,8,4,1,4,'#a29bfe'],[0,39,0,5,1,5,'#ffd700']]},
+  { sky:0x1a0505, fog:0x1a0505, fogDist:110, start:[0,0,0], goal:[0,14,-80],
+    platforms:[
+      [0,0,0,8,1,8,'#e17055'],[0,3,-16,8,1,1.5,'#fdcb6e'],[0,5,-32,1.5,1,8,'#55efc4'],
+      [0,7,-48,8,1,1.5,'#6c5ce7'],[0,9,-64,1.5,1,8,'#fd79a8'],[0,13,-80,6,1,6,'#ffd700']]},
+  { sky:0x001a10, fog:0x001a10, fogDist:140, start:[0,0,0], goal:[0,22,-90],
+    platforms:[
+      [0,0,0,8,1,8,'#00b894'],[-12,4,-20,5,1,5,'#0984e3'],[12,4,-20,5,1,5,'#e17055'],
+      [-12,8,-40,5,1,5,'#6c5ce7'],[12,8,-40,5,1,5,'#fdcb6e'],[0,12,-60,5,1,5,'#fd79a8'],
+      [0,16,-75,4,1,4,'#55efc4'],[0,21,-90,6,1,6,'#ffd700']]},
+  { sky:0x000020, fog:0x000020, fogDist:100, start:[0,0,0], goal:[20,30,-60],
+    platforms:[
+      [0,0,0,6,1,6,'#a29bfe'],[8,5,-10,3,1,3,'#fd79a8'],[16,9,-20,3,1,3,'#ffeaa7'],
+      [8,13,-32,3,1,3,'#74b9ff'],[16,17,-44,3,1,3,'#55efc4'],[20,22,-55,3,1,3,'#e17055'],
+      [20,29,-60,4,1,4,'#ffd700']]},
+  { sky:0x1a0010, fog:0x1a0010, fogDist:110, start:[0,0,0], goal:[-10,35,-70],
+    platforms:[
+      [0,0,0,7,1,7,'#e17055'],[10,4,-12,4,1,4,'#fdcb6e'],[-5,8,-24,3,1,5,'#55efc4'],
+      [8,12,-36,4,1,3,'#6c5ce7'],[-8,16,-48,3,1,4,'#fd79a8'],[2,20,-56,3,1,3,'#74b9ff'],
+      [-10,26,-62,3,1,3,'#a29bfe'],[-10,34,-70,5,1,5,'#ffd700']]},
+  { sky:0x050005, fog:0x050005, fogDist:200, start:[0,0,0], goal:[0,55,0],
+    platforms:[
+      [0,0,0,8,1,8,'#ffd700'],[0,2,-20,5,1,5,'#e17055'],[12,5,-38,5,1,5,'#fd79a8'],
+      [-10,8,-56,5,1,5,'#6c5ce7'],[0,11,-72,5,1,5,'#55efc4'],[10,15,-60,4,1,4,'#74b9ff'],
+      [10,20,-45,4,1,4,'#a29bfe'],[0,25,-30,4,1,4,'#fdcb6e'],[-10,30,-15,4,1,4,'#e17055'],
+      [0,35,0,4,1,4,'#fd79a8'],[0,40,10,4,1,4,'#55efc4'],[0,45,0,4,1,4,'#ffd700'],
+      [0,50,0,4,1,4,'#ffd700'],[0,54,0,5,1,5,'#fff700']]},
+];
+
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+const GRAVITY     = -28;
+const JUMP_FORCE  = 10.5;
+const MOVE_SPEED  = 8;
+const SPRINT_MULT = 1.65;
+const PH          = 0.6;   // player half-height (box is 1.2 tall)
+const PR          = 0.32;  // player half-width
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let currentLevel = 0, deaths = 0, startTime = 0, gameActive = false;
+let levelObjects = [], platformMeshes = [], goalMesh = null;
+let sunLight, ambLight;
+
+// ─── PLAYER ──────────────────────────────────────────────────────────────────
+const player = {
+  pos: new THREE.Vector3(),
+  vel: new THREE.Vector3(),
+  onGround: false,
+  jumpsLeft: 2,
+  mesh: null,
+};
+
+// Create player mesh once
+(function () {
+  const geo = new THREE.BoxGeometry(PR * 2, PH * 2, PR * 2);
+  const mat = new THREE.MeshLambertMaterial({ color: 0xff4444 });
+  player.mesh = new THREE.Mesh(geo, mat);
+  player.mesh.castShadow = true;
+  scene.add(player.mesh);
+})();
+
+// ─── KEYBOARD ────────────────────────────────────────────────────────────────
+const keys = {};
+let jumpQueued = false;  // set true on keydown Space, consumed each frame
+
+window.addEventListener('keydown', e => {
+  if (!keys[e.code] && e.code === 'Space') jumpQueued = true;
+  keys[e.code] = true;
+  if (['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))
+    e.preventDefault();
+});
+window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+// ─── GAMEPAD (3DS) ────────────────────────────────────────────────────────────
+// 3DS gamepad button layout (standard gamepad API):
+//   0=A  1=B  2=X  3=Y  4=L  5=R  12=DUp 13=DDown 14=DLeft 15=DRight
+// Axes: 0=CirclePad-X  1=CirclePad-Y  2=CStick-X  3=CStick-Y
+let prevGpA = false;
+
+function getGamepad() {
+  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+  for (let i = 0; i < pads.length; i++) if (pads[i]) return pads[i];
+  return null;
+}
+const btn = (pad, i) => !!(pad && pad.buttons[i] &&
+  (pad.buttons[i].pressed || pad.buttons[i].value > 0.5));
+const axis = (pad, i) => {
+  if (!pad || pad.axes[i] === undefined) return 0;
+  const v = pad.axes[i];
+  return Math.abs(v) > 0.15 ? v : 0; // deadzone
+};
+
+// ─── CAMERA ──────────────────────────────────────────────────────────────────
+let camYaw = 0, camPitch = -0.25;
+let isLocked = false;
+
+document.addEventListener('pointerlockchange', () => {
+  isLocked = document.pointerLockElement === canvas;
+});
+canvas.addEventListener('click', () => { if (gameActive) canvas.requestPointerLock(); });
+document.addEventListener('mousemove', e => {
+  if (!isLocked) return;
+  camYaw  -= e.movementX * 0.002;
+  camPitch = Math.max(-1.0, Math.min(0.3, camPitch - e.movementY * 0.002));
+});
+
+// ─── BUILD LEVEL ─────────────────────────────────────────────────────────────
+function buildLevel(idx) {
+  levelObjects.forEach(o => scene.remove(o));
+  levelObjects = []; platformMeshes = []; goalMesh = null;
+
+  const lvl = LEVELS[idx];
+  scene.background = new THREE.Color(lvl.sky);
+  scene.fog = new THREE.Fog(lvl.fog, 40, lvl.fogDist);
+
+  if (sunLight) { scene.remove(sunLight); scene.remove(ambLight); }
+  sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  sunLight.position.set(20, 60, 30);
+  sunLight.castShadow = true;
+  ambLight = new THREE.AmbientLight(0x334466, 0.8);
+  scene.add(sunLight, ambLight);
+  levelObjects.push(sunLight, ambLight);
+
+  lvl.platforms.forEach(([cx, topY, cz, w, h, d, col]) => {
+    const geo = new THREE.BoxGeometry(w, h, d);
+    const mat = new THREE.MeshLambertMaterial({ color: new THREE.Color(col) });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(cx, topY - h / 2, cz);  // centre the box so top = topY
+    mesh.receiveShadow = true; mesh.castShadow = true;
+    scene.add(mesh); levelObjects.push(mesh);
+    platformMeshes.push({ cx, topY, cz, w, h, d });
+  });
+
+  // Goal cube
+  const [gx, gy, gz] = lvl.goal;
+  const gGeo = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+  const gMat = new THREE.MeshLambertMaterial({ color:0xffd700, emissive:0xffaa00, emissiveIntensity:0.6 });
+  goalMesh = new THREE.Mesh(gGeo, gMat);
+  goalMesh.position.set(gx, gy + 1.5, gz);
+  scene.add(goalMesh); levelObjects.push(goalMesh);
+  const glow = new THREE.PointLight(0xffd700, 2, 12);
+  glow.position.copy(goalMesh.position);
+  scene.add(glow); levelObjects.push(glow);
+
+  // Spawn player flush on top of start platform, no overlap
+  const startTopY = lvl.platforms[0][1];   // topY of first platform
+  const [sx, , sz] = lvl.start;
+  player.pos.set(sx, startTopY + PH, sz);  // centre Y = topY + half-height
+  player.vel.set(0, 0, 0);
+  player.onGround = true;  // already standing — no initial bounce
+  player.jumpsLeft = 2;
+
+  document.getElementById('levelHud').textContent = `LEVEL ${idx + 1}`;
+}
+
+// ─── COLLISION ────────────────────────────────────────────────────────────────
+function resolveCollision() {
+  player.onGround = false;
+  const px = player.pos.x, py = player.pos.y, pz = player.pos.z;
+
+  platformMeshes.forEach(({ cx, topY, cz, w, h, d }) => {
+    const botY = topY - h;
+    // Broad-phase: horizontal overlap?
+    if (px <= cx - w/2 - PR || px >= cx + w/2 + PR) return;
+    if (pz <= cz - d/2 - PR || pz >= cz + d/2 + PR) return;
+
+    // Land on top surface
+    const feet = py - PH;
+    if (player.vel.y <= 0 && feet >= botY - 0.05 && feet <= topY + 0.3) {
+      player.pos.y = topY + PH;
+      player.vel.y = 0;
+      player.onGround = true;
+      player.jumpsLeft = 2;
+    }
+    // Hit ceiling
+    const head = py + PH;
+    if (player.vel.y > 0 && head >= botY && head <= topY) {
+      player.pos.y = botY - PH;
+      player.vel.y = 0;
+    }
+  });
+}
+
+// ─── RESPAWN ─────────────────────────────────────────────────────────────────
+function respawn() {
+  deaths++;
+  document.getElementById('deathHud').textContent = `DEATHS ${deaths}`;
+  const lvl = LEVELS[currentLevel];
+  const startTopY = lvl.platforms[0][1];
+  const [sx, , sz] = lvl.start;
+  player.pos.set(sx, startTopY + PH, sz);
+  player.vel.set(0, 0, 0);
+  player.onGround = true;
+  player.jumpsLeft = 2;
+  jumpQueued = false;
+}
+
+// ─── SCREENS ─────────────────────────────────────────────────────────────────
+function showScreen(title, sub, btnText, action) {
+  const s = document.getElementById('screen');
+  s.innerHTML = `
+    <div id="levelBadge">${title}</div><p>${sub}</p>
+    <button onclick="${action}()"
+      style="margin-top:28px;padding:14px 48px;background:#ffd700;color:#000;
+             font-family:'Courier New',monospace;font-size:16px;font-weight:bold;
+             letter-spacing:4px;border:none;cursor:pointer;text-transform:uppercase">
+      ${btnText}</button>`;
+  s.style.display = 'flex';
+  gameActive = false;
+}
+function nextLevel() {
+  document.getElementById('screen').style.display = 'none';
+  buildLevel(++currentLevel);
+  gameActive = true; startTime = performance.now(); jumpQueued = false; prevGpA = false;
+}
+function restartGame() {
+  document.getElementById('screen').style.display = 'none';
+  currentLevel = 0; deaths = 0;
+  document.getElementById('deathHud').textContent = 'DEATHS 0';
+  buildLevel(0);
+  gameActive = true; startTime = performance.now(); jumpQueued = false; prevGpA = false;
+}
+function startGame() {
+  document.getElementById('screen').style.display = 'none';
+  currentLevel = 0; deaths = 0;
+  buildLevel(0);
+  gameActive = true; startTime = performance.now(); jumpQueued = false; prevGpA = false;
+  canvas.requestPointerLock();
+}
+window.nextLevel = nextLevel;
+window.restartGame = restartGame;
+window.startGame = startGame;
+
+function checkGoal() {
+  if (!goalMesh) return;
+  if (player.pos.distanceTo(goalMesh.position) < 2.5) {
+    if (currentLevel >= LEVELS.length - 1) {
+      const t = ((performance.now() - startTime) / 1000).toFixed(1);
+      showScreen('🏆 YOU WIN!', `ALL 10 LEVELS · TIME ${t}s · DEATHS ${deaths}`, 'PLAY AGAIN', 'restartGame');
+    } else {
+      showScreen(`LEVEL ${currentLevel+1} CLEAR!`, `NEXT: LEVEL ${currentLevel+2}`, 'CONTINUE', 'nextLevel');
+    }
+  }
+}
+
+// ─── GAME LOOP ────────────────────────────────────────────────────────────────
+let last = 0;
+function loop(now) {
+  requestAnimationFrame(loop);
+  const dt = Math.min((now - last) / 1000, 0.05);
+  last = now;
+
+  if (!gameActive) {
+    renderer.render(scene, camera);
+    jumpQueued = false;
+    return;
+  }
+
+  // ── Gamepad poll ──────────────────────────────────────────────────────────
+  const pad   = getGamepad();
+  const gpA   = btn(pad, 0);                      // A = jump
+  const gpR   = btn(pad, 5);                      // R = sprint
+  const gpLX  = axis(pad, 0);                     // Circle Pad X
+  const gpLY  = axis(pad, 1);                     // Circle Pad Y
+  const gpRX  = axis(pad, 2);                     // C-Stick X
+  const gpRY  = axis(pad, 3);                     // C-Stick Y
+  const gpDL  = btn(pad, 14), gpDR = btn(pad, 15);
+  const gpDU  = btn(pad, 12), gpDD = btn(pad, 13);
+
+  // A button: jump on press edge only
+  if (gpA && !prevGpA) jumpQueued = true;
+  prevGpA = gpA;
+
+  // ── Camera ────────────────────────────────────────────────────────────────
+  const cRX = gpRX || (gpDR ? 1 : 0) - (gpDL ? 1 : 0);
+  const cRY = gpRY || (gpDD ? 1 : 0) - (gpDU ? 1 : 0);
+  camYaw   -= cRX * 0.04;
+  camPitch  = Math.max(-1.0, Math.min(0.3, camPitch - cRY * 0.03));
+
+  // ── Jump ─────────────────────────────────────────────────────────────────
+  if (jumpQueued && player.jumpsLeft > 0) {
+    player.vel.y = JUMP_FORCE;
+    player.jumpsLeft--;
+    player.onGround = false;
+  }
+  jumpQueued = false;
+
+  // ── Sprint ────────────────────────────────────────────────────────────────
+  const sprint = (keys['ShiftLeft'] || keys['ShiftRight'] || gpR) ? SPRINT_MULT : 1;
+  const speed  = MOVE_SPEED * sprint;
+
+  // ── Move direction ────────────────────────────────────────────────────────
+  const fwd   = new THREE.Vector3(-Math.sin(camYaw), 0, -Math.cos(camYaw));
+  const right = new THREE.Vector3( Math.cos(camYaw), 0, -Math.sin(camYaw));
+
+  let mx = 0, mz = 0;
+  if (keys['KeyW']    || keys['ArrowUp'])    { mx += fwd.x;   mz += fwd.z; }
+  if (keys['KeyS']    || keys['ArrowDown'])  { mx -= fwd.x;   mz -= fwd.z; }
+  if (keys['KeyA']    || keys['ArrowLeft'])  { mx -= right.x; mz -= right.z; }
+  if (keys['KeyD']    || keys['ArrowRight']) { mx += right.x; mz += right.z; }
+
+  // Circle Pad overrides keyboard if active
+  if (Math.abs(gpLX) > 0 || Math.abs(gpLY) > 0) {
+    mx = fwd.x * (-gpLY) + right.x * gpLX;
+    mz = fwd.z * (-gpLY) + right.z * gpLX;
+  }
+
+  const len = Math.sqrt(mx*mx + mz*mz);
+  if (len > 1) { mx /= len; mz /= len; }
+
+  // ── Physics ───────────────────────────────────────────────────────────────
+  player.vel.x  = mx * speed;
+  player.vel.z  = mz * speed;
+  player.vel.y += GRAVITY * dt;
+
+  player.pos.x += player.vel.x * dt;
+  player.pos.z += player.vel.z * dt;
+  player.pos.y += player.vel.y * dt;
+
+  resolveCollision();
+  if (player.pos.y < -20) respawn();
+
+  // ── Sync mesh ─────────────────────────────────────────────────────────────
+  player.mesh.position.copy(player.pos);
+
+  // ── 3rd-person camera ─────────────────────────────────────────────────────
+  const dist = 6, ch = 3;
+  const tx = player.pos.x - Math.sin(camYaw) * dist * Math.cos(camPitch);
+  const ty = player.pos.y + ch + Math.sin(-camPitch) * dist;
+  const tz = player.pos.z - Math.cos(camYaw) * dist * Math.cos(camPitch);
+  camera.position.lerp(new THREE.Vector3(tx, ty, tz), 0.18);
+  camera.lookAt(player.pos.x, player.pos.y + 0.3, player.pos.z);
+
+  // ── Goal / HUD ────────────────────────────────────────────────────────────
+  if (goalMesh) goalMesh.rotation.y += dt * 2;
+  checkGoal();
+
+  const e = (now - startTime) / 1000;
+  const m = Math.floor(e / 60), s = Math.floor(e % 60).toString().padStart(2,'0');
+  document.getElementById('timeHud').textContent = `TIME ${m}:${s}`;
+
+  renderer.render(scene, camera);
+}
+
+requestAnimationFrame(t => { last = t; loop(t); });
+</script>
+
+</body>
+</html>
